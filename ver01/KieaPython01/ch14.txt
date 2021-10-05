@@ -1,0 +1,286 @@
+---------------------------------------------------------------------------------
+import unittest
+
+# A simple function to illustrate
+def parse_int(s):
+    return int(s)
+
+class TestConversion(unittest.TestCase):
+    # Testing that an exception gets raised
+    def test_bad_int(self):
+        self.assertRaises(ValueError, parse_int, "N/A")
+
+    # Testing an exception plus regex on exception message
+    def test_bad_int_msg(self):
+        self.assertRaisesRegex(ValueError, 'invalid literal .*', parse_int, 'N/A') 
+
+# Example of testing an exception along with inspection of exception instance
+import errno
+
+class TestIO(unittest.TestCase):
+    def test_file_not_found(self):
+        try:
+            f = open('/file/not/found')
+        except IOError as e:
+            self.assertEqual(e.errno, errno.ENOENT)
+        else:
+            self.fail("IOError not raised") 
+
+import sys
+def main(out=sys.stderr, verbosity=2):
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    unittest.TextTestRunner(out, verbosity=verbosity).run(suite)
+
+if __name__ == '__main__':
+    with open('testing.out', 'w') as f:
+        main(f)
+
+---------------------------------------------------------------------------------
+import time
+def test(func):
+    start = time.time()
+    nums = range(1000000)
+    for n in range(100):
+        r = func(nums)
+    end = time.time()
+    print(func.__name__, ':', end-start)
+
+import math
+def compute_roots_1(nums):
+    result = []
+    for n in nums:
+        result.append(math.sqrt(n))
+    return result
+
+from math import sqrt
+def compute_roots_2(nums):
+    result = []
+    result_append = result.append
+    for n in nums:
+        result_append(sqrt(n))
+    return result
+
+def compute_roots_3(nums):
+    sqrt = math.sqrt
+    result = []
+    result_append = result.append
+    for n in nums:
+        result_append(sqrt(n))
+    return result
+
+tests = [compute_roots_1, compute_roots_2, compute_roots_3]
+for func in tests:
+    test(func)
+
+---------------------------------------------------------------------------------
+# timethis.py
+
+import time
+from functools import wraps
+
+def timethis(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        r = func(*args, **kwargs)
+        end = time.perf_counter()
+        print('{}.{} : {}'.format(func.__module__, func.__name__, end-start))
+        return r
+    return wrapper
+
+if __name__ == '__main__':
+    @timethis
+    def countdown(n):
+        while n > 0:
+            n -= 1
+
+
+    countdown(10000000)
+
+---------------------------------------------------------------------------------
+# Different styles of raising chained exceptions
+
+# Example 1:   Explicit chaining.  Use this whenever your
+# intent is to raise a new exception in response to another
+
+def example1():
+    try:
+        int('N/A')
+    except ValueError as e:
+        raise RuntimeError('A parsing error occurred') from e
+
+# Example 2:  Implicit chaining.  This occurs if there's an
+# unexpected exception in the except block.
+
+def example2():
+    try:
+        int('N/A')
+    except ValueError as e:
+        print('It failed. Reason:', err)   # Intentional error
+
+# Example 3: Discarding the previous exception
+def example3():
+    try:
+        int('N/A')
+    except ValueError as e:
+        raise RuntimeError('A parsing error occurred') from None
+
+if __name__ == '__main__':
+    import traceback
+    print('****** EXPLICIT EXCEPTION CHAINING ******')
+    try:
+        example1()
+    except Exception:
+        traceback.print_exc()
+
+    print()
+    print('****** IMPLICIT EXCEPTION CHAINING ******')
+    try:
+        example2()
+    except Exception:
+        traceback.print_exc()
+
+    print()
+    print('****** DISCARDED CHAINING *******')
+    try:
+        example3()
+    except Exception:
+        traceback.print_exc()
+
+
+
+---------------------------------------------------------------------------------
+import unittest
+import os
+import platform
+
+class Tests(unittest.TestCase):
+    def test_0(self):
+        self.assertTrue(True)
+
+    @unittest.skip('skipped test')
+    def test_1(self):
+        self.fail("should have failed!")
+
+    @unittest.skipIf(os.name=='posix', 'Not supported on Unix')
+    def test_2(self):
+        import winreg
+
+    @unittest.skipUnless(platform.system() == 'Darwin', 'Mac specific test')
+    def test_3(self):
+        self.assertTrue(True)
+
+    @unittest.expectedFailure
+    def test_4(self):
+        self.assertEqual(2+2, 5)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
+
+---------------------------------------------------------------------------------
+import unittest
+
+# A simple function to illustrate
+def parse_int(s):
+    return int(s)
+
+class TestConversion(unittest.TestCase):
+    # Testing that an exception gets raised
+    def test_bad_int(self):
+        self.assertRaises(ValueError, parse_int, "N/A")
+
+    # Testing an exception plus regex on exception message
+    def test_bad_int_msg(self):
+        self.assertRaisesRegex(ValueError, 'invalid literal .*', parse_int, 'N/A') 
+
+# Example of testing an exception along with inspection of exception instance
+import errno
+
+class TestIO(unittest.TestCase):
+    def test_file_not_found(self):
+        try:
+            f = open('/file/not/found')
+        except IOError as e:
+            self.assertEqual(e.errno, errno.ENOENT)
+        else:
+            self.fail("IOError not raised") 
+
+if __name__ == '__main__':
+    unittest.main()
+
+---------------------------------------------------------------------------------
+# mymodule.py
+
+def urlprint(protocol, host, domain):
+    url = '{}://{}.{}'.format(protocol, host, domain)
+    print(url)
+
+---------------------------------------------------------------------------------
+from io import StringIO
+from unittest import TestCase
+from unittest.mock import patch
+import mymodule
+
+class TestURLPrint(TestCase):
+    def test_url_gets_to_stdout(self):
+        protocol = 'http'
+        host = 'www'
+        domain = 'example.com'
+        expected_url = '{}://{}.{}\n'.format(protocol, host, domain)
+
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            mymodule.urlprint(protocol, host, domain)
+            self.assertEqual(fake_out.getvalue(), expected_url)
+
+if __name__ == '__main__':
+    import unittest
+    unittest.main()
+
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------

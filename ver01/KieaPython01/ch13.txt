@@ -1,0 +1,373 @@
+--------------------------------------------------------------------------------
+# somelib.py
+
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
+
+# Example function (for testing)
+def func():
+    log.critical("A Critical Error!")
+    log.debug("A debug message")
+
+--------------------------------------------------------------------------------
+import subprocess
+try:
+    out_bytes = subprocess.check_output(['netstat', '-a'])
+    out_text = out_bytes.decode('utf-8')
+    print(out_text)
+except subprocess.CalledProcessError as e:
+    print('It did not work. Reason:', e)
+    print('Exitcode:', e.returncode)
+
+
+--------------------------------------------------------------------------------
+import subprocess
+
+# Some text to send
+text = b'''
+hello world
+this is a test
+goodbye
+'''
+
+# Launch a command with pipes
+p = subprocess.Popen(['wc'],
+          stdout = subprocess.PIPE,
+          stdin = subprocess.PIPE)
+
+# Send the data and get the output
+stdout, stderr = p.communicate(text)
+
+text = stdout.decode('utf-8')
+print(text)
+
+
+--------------------------------------------------------------------------------
+#!/usr/bin/env python3.3
+
+import os
+import time
+
+def modified_within(top, seconds):
+    now = time.time()
+    for path, dirs, files in os.walk(top):
+        for name in files:
+            fullpath = os.path.join(path, name)
+            if os.path.exists(fullpath):
+                mtime = os.path.getmtime(fullpath)
+                if mtime > (now - seconds):
+                    print(fullpath)
+            
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) != 3:
+        print('Usage: {} dir seconds'.format(sys.argv[0]))
+        raise SystemExit(1)
+    
+    modified_within(sys.argv[1], float(sys.argv[2]))
+
+    
+
+    
+
+--------------------------------------------------------------------------------
+from socket import AF_INET, AF_INET6, inet_pton, inet_ntop
+
+def cidr_range(cidr_address):
+    family = AF_INET6 if ':' in cidr_address else AF_INET
+    address, maskstr = cidr_address.split('/')
+    maskbits = int(maskstr)
+
+    # Parse the supplied address into bytes
+    addr_bytes = inet_pton(family, address)
+
+    # Calculate number of address bytes and mask bits
+    addr_len = len(addr_bytes)
+    numaddrs = 2**(addr_len*8 - maskbits)
+    mask = -numaddrs
+
+    # Generate addresses
+    addr = int.from_bytes(addr_bytes, 'big') & mask
+    for n in range(numaddrs):
+        yield inet_ntop(family, (addr+n).to_bytes(addr_len, 'big'))
+
+if __name__ == '__main__':
+   for a in cidr_range('123.45.67.89/27'):
+       print(a)
+
+   for a in cidr_range('12:3456:78:90ab:cd:ef01:23:34/125'):
+       print(a)
+
+--------------------------------------------------------------------------------
+import os
+sz = os.get_terminal_size()
+print(sz.columns, 'columns')
+print(sz.lines, 'lines')
+
+--------------------------------------------------------------------------------
+import time
+
+class Timer:
+    def __init__(self, func=time.perf_counter):
+        self.elapsed = 0.0
+        self._func = func
+        self._start = None
+
+    def start(self):
+        if self._start is not None:
+            raise RuntimeError('Already started')
+        self._start = self._func()
+        
+    def end(self):
+        if self._start is None:
+            raise RuntimeError('Not started')
+        end = self._func()
+        self.elapsed += end - self._start
+        self._start = None
+
+    def reset(self):
+        self.elapsed = 0.0
+
+    @property
+    def running(self):
+        return self._start is not None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args):
+        self.end()
+
+
+if __name__ == '__main__':
+    def countdown(n):
+        while n > 0:
+            n -= 1
+
+    t = Timer()
+    t.start()
+    countdown(1000000)
+    t.end()
+    print(t.elapsed)
+
+    with t:
+        countdown(1000000)
+    print(t.elapsed)
+
+
+--------------------------------------------------------------------------------
+# search.py
+'''
+Hypothetical command line tool for searching a collection of
+files for one or more text patterns.
+'''
+import argparse
+parser = argparse.ArgumentParser(description='Search some files')
+
+parser.add_argument(dest='filenames',metavar='filename', nargs='*')
+
+parser.add_argument('-p', '--pat',metavar='pattern', required=True,
+                    dest='patterns', action='append',
+                    help='text pattern to search for')
+
+parser.add_argument('-v', dest='verbose', action='store_true', 
+                    help='verbose mode')
+
+parser.add_argument('-o', dest='outfile', action='store',
+                    help='output file')
+
+parser.add_argument('--speed', dest='speed', action='store',
+                    choices={'slow','fast'}, default='slow',
+                    help='search speed')
+
+args = parser.parse_args()
+
+# Output the collected arguments
+print(args.filenames)
+print(args.patterns)
+print(args.verbose)
+print(args.outfile)
+print(args.speed)
+
+--------------------------------------------------------------------------------
+import getpass
+
+user = getpass.getuser()
+passwd = getpass.getpass()
+
+print('User:', user)
+print('Passwd:', passwd)
+
+--------------------------------------------------------------------------------
+import signal
+import resource
+import os
+
+def time_exceeded(signo, frame):
+    print("Time's up!")
+    raise SystemExit(1)
+
+def set_max_runtime(seconds):
+    # Install the signal handler and set a resource limit
+    soft, hard = resource.getrlimit(resource.RLIMIT_CPU)
+    resource.setrlimit(resource.RLIMIT_CPU, (seconds, hard))
+    signal.signal(signal.SIGXCPU, time_exceeded)
+
+if __name__ == '__main__':
+    set_max_runtime(15)
+    while True:
+        pass
+
+--------------------------------------------------------------------------------
+
+    ; config.ini
+    ; Sample configuration file
+
+    [installation]
+    library=%(prefix)s/lib
+    include=%(prefix)s/include
+    bin=%(prefix)s/bin
+    prefix=/usr/local
+
+    # Setting related to debug configuration
+    [debug]
+    log_errors=true
+    show_warnings=False
+
+    [server]
+    port: 8080       
+    nworkers: 32
+    pid-file=/tmp/spam.pid
+    root=/www/root
+    signature: 
+        =================================
+        Brought to by the Python Cookbook
+        =================================
+
+--------------------------------------------------------------------------------
+from configparser import ConfigParser
+cfg = ConfigParser()
+cfg.read('config.ini')
+print('sections:', cfg.sections())
+print('installation:library', cfg.get('installation','library'))
+print('debug:log_errors', cfg.getboolean('debug','log_errors'))
+print('server:port', cfg.getint('server','port'))
+print('server:nworkers', cfg.getint('server','nworkers'))
+print('server:signature', cfg.get('server','signature'))
+
+--------------------------------------------------------------------------------
+[loggers]
+keys=root
+    
+[handlers]
+keys=defaultHandler
+    
+[formatters]
+keys=defaultFormatter
+
+[logger_root]
+level=INFO
+handlers=defaultHandler
+qualname=root
+    
+[handler_defaultHandler]
+class=FileHandler
+formatter=defaultFormatter
+args=('app.log', 'a')
+    
+[formatter_defaultFormatter]
+format=%(levelname)s:%(name)s:%(message)s
+
+--------------------------------------------------------------------------------
+import logging
+
+def main():
+    # Configure the logging system
+    logging.basicConfig(
+        filename='app.log',
+        level=logging.ERROR
+    )
+
+    # Variables (to make the calls that follow work)
+    hostname = 'www.python.org'
+    item = 'spam'
+    filename = 'data.csv'
+    mode = 'r'
+
+    # Example logging calls (insert into your program)
+    logging.critical('Host %s unknown', hostname)
+    logging.error("Couldn't find %r", item)
+    logging.warning('Feature is deprecated')
+    logging.info('Opening file %r, mode=%r', filename, mode)
+    logging.debug('Got here')
+
+if __name__ == '__main__':
+    main()
+
+--------------------------------------------------------------------------------
+import logging
+import logging.config
+
+def main():
+    # Configure the logging system
+    logging.config.fileConfig('logconfig.ini')
+
+    # Variables (to make the calls that follow work)
+    hostname = 'www.python.org'
+    item = 'spam'
+    filename = 'data.csv'
+    mode = 'r'
+
+    # Example logging calls (insert into your program)
+    logging.critical('Host %s unknown', hostname)
+    logging.error("Couldn't find %r", item)
+    logging.warning('Feature is deprecated')
+    logging.info('Opening file %r, mode=%r', filename, mode)
+    logging.debug('Got here')
+
+if __name__ == '__main__':
+    main()
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
